@@ -1,0 +1,16 @@
+{
+	"local_database_host": "",
+	"local_database_user": "",
+	"local_database_pass": "",
+	"local_database_db": "",
+
+	"production_database_host": "",
+	"production_database_user": "",
+	"production_database_pass": "",
+	"production_database_db": "",
+
+	"username": "",
+	"password": "",
+	"shared_secret": "",
+	"identity_secret": ""
+}
