@@ -24,7 +24,9 @@
 		}
 		else
 		{
-			$steam_id = "76561198364842175";
+			include_once "get_key_exchange_bot_steam_id.php";
+
+			$steam_id = GetKeyExchangeBotSteamID();
 		}
 
 		switch($platform)

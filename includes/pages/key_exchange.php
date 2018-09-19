@@ -41,10 +41,24 @@
 
 				cursor: pointer;
 			}
+
+			.p_link
+			{
+				color: #FFC62E;
+
+				text-decoration: none;
+			}
+
+			.p_link:hover
+			{
+				color: #F59C00;
+
+				cursor: pointer;
+			}
 		</style>
 
 		<script type = "text/javascript">
-			var p_last_element_p_id_my_keys, p_last_element_p_id_exchange, p_selected_my_keys = [], p_selected_my_keys_value = 0.00, p_selected_my_keys_platform = 0, p_selected_my_keys_app_id = 0, p_selected_exchange = [], p_selected_exchange_value = 0.00, p_selected_exchange_platform = 0, p_selected_exchange_app_id = 0, p_show_key_info_move_up_and_down_interval = -1, p_keys_loaded = 0, p_perform_action = 1;
+			var p_last_element_p_id_my_keys, p_last_element_p_id_exchange, p_selected_my_keys = [], p_selected_my_keys_value = 0.00, p_selected_my_keys_platform = 0, p_selected_my_keys_app_id = 0, p_selected_exchange = [], p_selected_exchange_value = 0.00, p_selected_exchange_platform = 0, p_selected_exchange_app_id = 0, p_show_key_info_move_up_and_down_interval = -1, p_call_process_key_exchange = 1, p_keys_loaded = 0, p_perform_action = 1;
 			function P_MoveExchangeButton(quadrant, return_position)
 			{
 				if(return_position)
@@ -661,6 +675,20 @@
 								}
 
 								$(document.getElementById("p_id_selected_my_keys_" + platform + "_" + app_id + "_" + name)).remove();
+
+								if(!p_selected_my_keys.length)
+								{
+									document.getElementById("p_id_send_container").innerHTML =
+									"<table style = \"width: 100%; height: 100%; font-size: 11pt; color: #AFAFAF; text-align: center;\" border = \"0\" cellspacing = \"0\" cellpadding = \"0\">\
+										<td>\
+											<img height = \"40px\" alt = \"Above\" src = \"images/above.png\"/>\
+											\
+											<div style = \"margin-top: 15px;\">\
+												Select the keys you want to exchange\
+											</div>\
+										</td>\
+									</table>";
+								}
 							}
 
 							$("#p_id_selected_my_keys_value").stop().prop("number", old_selected_value).animateNumber(
@@ -742,6 +770,20 @@
 								}
 
 								$(document.getElementById("p_id_selected_exchange_" + platform + "_" + app_id + "_" + name)).remove();
+
+								if(!p_selected_exchange.length)
+								{
+									document.getElementById("p_id_receive_container").innerHTML =
+									"<table style = \"width: 100%; height: 100%; font-size: 11pt; color: #AFAFAF; text-align: center;\" border = \"0\" cellspacing = \"0\" cellpadding = \"0\">\
+										<td>\
+											<img height = \"40px\" alt = \"Above\" src = \"images/above.png\"/>\
+											\
+											<div style = \"margin-top: 15px;\">\
+												Select the keys you want to exchange\
+											</div>\
+										</td>\
+									</table>";
+								}
 							}
 
 							$("#p_id_selected_exchange_value").stop().prop("number", old_selected_value).animateNumber(
@@ -804,7 +846,7 @@
 					{
 						type: "POST",
 						url: "includes/ajax_call_handler.php",
-						data: {include_path: "process_key_exchange.php", my_keys: JSON.stringify(p_selected_my_keys), exchange: JSON.stringify(p_selected_exchange)},
+						data: {include_path: "validate_key_exchange.php", my_keys: JSON.stringify(p_selected_my_keys), exchange: JSON.stringify(p_selected_exchange)},
 
 						success: function(html)
 						{
@@ -834,9 +876,139 @@
 								</div>";
 
 								ShowModal();
-							}
 
-							p_perform_action = 1;
+								p_perform_action = 1;
+							}
+							else
+							{
+								document.getElementById("id_modal_content_main").innerHTML =
+								"<table style = \"font-family: arial; font-size: 14pt; color: #EEEEEE; display: inline-block;\" border = \"0\" cellspacing = \"0\" cellpadding = \"0\">\
+									<td>\
+										<img height = \"100px\" alt = \"Loading\" src = \"images/loading.svg\"/>\
+									</td>\
+									\
+									<td style = \"padding-left: 10px;\">\
+										Requesting your key(s)...\
+									</td>\
+								</table>";
+
+								var delay = setInterval(function()
+								{
+									if(p_call_process_key_exchange)
+									{
+										p_call_process_key_exchange = 0;
+
+										// -----
+
+										$.ajax(
+										{
+											type: "POST",
+											url: "includes/ajax_call_handler.php",
+											data: {include_path: "process_key_exchange.php"},
+
+											success: function(html)
+											{
+												if(html)
+												{
+													response = html.split("|separator|");
+
+													switch(response[0])
+													{
+														case "Alert": case "ExpressTrade": case "Steam":
+														{
+															g_shown_modal_id = 0;
+
+															clearInterval(delay);
+
+															// -----
+
+															document.getElementById("id_modal_content_header").innerHTML =
+															"<table style = \"font-size: 20pt; font-weight: bold; color: #EA4141; display: inline-table;\" border = \"0\" cellspacing = \"0\" cellpadding = \"0\">\
+																<td>\
+																	<img height = \"28px\" alt = \"Alert\" src = \"images/alert.png\"/>\
+																</td>\
+																\
+																<td style = \"padding-left: 7px;\">\
+																	" + response[0] + "\
+																</td>\
+															</table>";
+
+															document.getElementById("id_modal_content_main").innerHTML = response[1];
+
+															document.getElementById("id_modal_content_footer").innerHTML =
+															"<div class = \"modal_button\" onclick = \"HideStandardModal();\">\
+																OKAY\
+															</div>";
+
+															ShowModal();
+
+															p_perform_action = 1;
+															break;
+														}
+														case "Exchange Complete":
+														{
+															clearInterval(delay);
+
+															// -----
+
+															document.getElementById("id_modal_content_header").innerHTML =
+															"<table style = \"font-size: 20pt; font-weight: bold; color: #95EA41; display: inline-table;\" border = \"0\" cellspacing = \"0\" cellpadding = \"0\">\
+																<td>\
+																	<img height = \"28px\" alt = \"Info\" src = \"images/info.png\"/>\
+																</td>\
+																\
+																<td style = \"padding-left: 7px;\">\
+																	" + response[0] + "\
+																</td>\
+															</table>";
+
+															document.getElementById("id_modal_content_main").innerHTML = response[1];
+
+															document.getElementById("id_modal_content_footer").innerHTML =
+															"<a href = \"?exchange\">\
+																<div class = \"modal_button\">\
+																	DISMISS\
+																</div>\
+															</a>";
+
+															ShowModal();
+															break;
+														}
+														default:
+														{
+															var html_2 =
+															"<table style = \"font-family: arial; font-size: 14pt; color: #EEEEEE; display: inline-block;\" border = \"0\" cellspacing = \"0\" cellpadding = \"0\">\
+																<td>\
+																	<img height = \"100px\" alt = \"Loading\" src = \"images/loading.svg\"/>\
+																</td>\
+																\
+																<td style = \"padding-left: 10px;\">\
+																	" + response[1] + "\
+																	\
+																	";
+
+															if(typeof response[2] !== "undefined")
+															{
+																html_2 +=
+																"<div style = \"padding-top: 1px; font-size: 11pt; color: #AFAFAF;\">\
+																	" + response[2] + "\
+																</div>";
+															}
+
+															document.getElementById("id_modal_content_main").innerHTML = html_2 +
+															"	</td>\
+															</table>";
+															break;
+														}
+													}
+												}
+
+												p_call_process_key_exchange = 1;
+											}
+										});
+									}
+								}, 1000);
+							}
 						}
 					});
 				}
@@ -850,7 +1022,7 @@
 
 	?>
 
-	<div style = "height: 100vh; min-height: 700px; margin-top: -210px; position: relative;">
+	<div style = "height: 100vh; min-height: 700px; margin-top: -213px; position: relative;">
 		<div id = "p_id_exchange_button" class = "p_exchange_button" onclick = "P_ProcessKeyExchange();">
 			<table style = "width: inherit; height: inherit; font-family: arial; font-size: 8pt; color: #FFC62E; text-shadow: #000000 0px 0px 1px; -webkit-font-smoothing: antialiased; text-align: center; display: inline-table;" border = "0" cellspacing = "0" cellpadding = "0">
 				<tr>
@@ -875,7 +1047,7 @@
 			</table>
 		</div>
 
-		<table style = "width: 100%; height: inherit; min-height: inherit; padding-top: 210px; font-family: arial; font-size: 10pt; color: #AFAFAF;" border = "0" cellspacing = "0" cellpadding = "0">
+		<table style = "width: 100%; height: inherit; min-height: inherit; padding-top: 213px; font-family: arial; font-size: 10pt; color: #AFAFAF;" border = "0" cellspacing = "0" cellpadding = "0">
 			<tr>
 				<td style = "width: 50%; max-width: 0px; height: 50%; border: 1px solid #181818; border-style: none solid solid none; vertical-align: top;" onmouseover = "P_MoveExchangeButton(1);" onmouseout = "P_MoveExchangeButton(1, 1);">
 					<div style = "height: 100%; border-top-left-radius: 5px; position: relative; overflow: hidden;">
@@ -1015,7 +1187,15 @@
 	</div>
 
 	<div style = "margin-top: 20px; text-align: center;">
-		<img id = "id_toggle_animation_group_11" style = "height: 15px; cursor: pointer;" alt = "Toggle Animation(s)" src = "images/animation.png" onclick = "ToggleAnimationGroup(11);" title = "Toggle Animation(s)"/>
+		<table style = "font-family: arial; font-size: 11pt; color: #AFAFAF; display: inline-block;" border = "0" cellspacing = "0" cellpadding = "0">
+			<td>
+				<img id = "id_toggle_animation_group_11" style = "height: 15px; cursor: pointer;" alt = "Toggle Animation(s)" src = "images/animation.png" onclick = "ToggleAnimationGroup(11);" title = "Toggle Animation(s)"/>
+			</td>
+
+			<td style = "padding-left: 10px;">
+				<font color = "#EEEEEE">Right click</font> for key info
+			</td>
+		</table>
 
 		<script type = "text/javascript">
 			if(g_animation_status[10] == 0)
